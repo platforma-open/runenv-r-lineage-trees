@@ -54,6 +54,17 @@ recommended packages that come bundled with R. Its `collect-dependencies.R` step
 fails with "missing value where TRUE/FALSE needed" in `download.file`. pkgdepends 0.9.0
 works. Until `@platforma-sdk/r-builder` pins it, a build fails at that step.
 
+## Tree-building programs
+
+The environment also carries raxml-ng 2.0.3, FastTree 2.1.11 and IgPhyML 2.0.0 in
+`bin/`, which is on `PATH` for every R tool that runs in it, and IgPhyML's hotspot
+tables in `share/igphyml/motifs`. `tools/binaries/build-binaries.sh` builds them
+into `binaries/` (pinned downloads, compiled in a pinned Debian container, so it
+needs Docker once) and copies them into each platform under `rdist/`. `npm run
+build` runs it between `pl-r-builder` and `pl-pkg build`; with `binaries/` already
+built it only copies, so the R build itself does not need Docker. Windows gets none:
+raxml-ng has no Windows build.
+
 ## Three things that will break a regeneration
 
 Each of these was hit while producing the current lock, and each fails in a way that

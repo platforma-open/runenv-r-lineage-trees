@@ -6,3 +6,5 @@ node_modules/
 *.tgz
 dependencies/renv/
 dependencies/.Rprofile
+/binaries/
+/tools/binaries/.cache/
