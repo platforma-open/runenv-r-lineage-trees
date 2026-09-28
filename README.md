@@ -4,7 +4,7 @@ R run environment for the Lineage Trees block: Dowser, TIgGER, Alakazam and SHaz
 the tree builders raxml-ng 2.0.3, FastTree 2.1.11 and IgPhyML 2.0.0. R 4.4.2,
 Bioconductor 3.20, on linux x64/aarch64, macOS x64/aarch64 and windows x64.
 
-## Using it from a block
+## Using It from a Block
 
 Add the package as a devDependency of the block's software package and reference it from an
 `R` artifact:
@@ -42,10 +42,10 @@ Two known failures:
 - **Posit binaries.** They link `libR.so`, which `pl-r-builder`'s R does not build, so
   `dependencies/.Renviron` turns them off and all 137 packages build from source.
 - **pkgdepends 0.9.1** fails in `collect-dependencies.R` with "missing value where
-  TRUE/FALSE needed". 0.9.0 works, but `pl-r-builder` installs the latest, so the build
-  fails there until `@platforma-sdk/r-builder` pins it.
+  TRUE/FALSE needed". Until `@platforma-sdk/r-builder` pins 0.9.0 itself,
+  `tools/patch-r-builder.mjs` (run on `npm install`) patches the pin in.
 
-## Tree builders
+## Tree Builders
 
 `binaries/<platform>/` holds them prebuilt, in Git LFS, so CI needs no Docker. To rebuild
 after changing a pin in `tools/binaries/pins.sh` or a build file, run
@@ -58,7 +58,7 @@ raxml-ng's memory, timing and CPU queries. The Windows raxml-ng is single-thread
 always passes `--threads 1`, and a higher value hangs it. On the same input, each Windows
 program gives the Linux likelihoods, trees and ancestral states.
 
-## Regenerating the lockfile
+## Regenerating the Lockfile
 
 ```bash
 docker build -t rlock-base -f tools/lock.Dockerfile tools
