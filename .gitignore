@@ -4,3 +4,5 @@ rdist/
 node_modules/
 *.tar.gz
 *.tgz
+dependencies/renv/
+dependencies/.Rprofile

@@ -1,0 +1,2 @@
+# Posit binaries link libR.so, which pl-r-builder's R does not build; build from source.
+RENV_CONFIG_PPM_ENABLED=FALSE

@@ -39,6 +39,21 @@ binary packages disabled.
 Then bump the version in `package.json`, commit, push to main. CI takes roughly 40
 minutes.
 
+## Building the environment
+
+`npm run build` runs `pl-r-builder`, which compiles R and restores `dependencies/renv.lock`
+into it. On Linux it expects Rocky Linux 8 with `sudo dnf`, as on the CI runners.
+
+`dependencies/.Renviron` turns off Posit binary packages for that restore. Posit's Linux
+binaries link against `libR.so`, and the R that `pl-r-builder` compiles is not built as a
+shared library, so they fail to load ("libR.so: cannot open shared object file"). With
+the binaries off, all 137 packages build from source.
+
+pkgdepends 0.9.1, which `pl-r-builder` installs as the latest version, cannot resolve R's
+recommended packages that come bundled with R. Its `collect-dependencies.R` step then
+fails with "missing value where TRUE/FALSE needed" in `download.file`. pkgdepends 0.9.0
+works. Until `@platforma-sdk/r-builder` pins it, a build fails at that step.
+
 ## Three things that will break a regeneration
 
 Each of these was hit while producing the current lock, and each fails in a way that
