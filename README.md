@@ -2,7 +2,25 @@
 
 R run environment for the Lineage Trees block: Dowser, TIgGER, Alakazam and SHazaM,
 which cover germline reconstruction, novel allele inference and the tree metrics.
-R 4.4.2, Bioconductor 3.20, all five platforms.
+R 4.4.2, Bioconductor 3.20, all five platforms (linux x64/aarch64, macOS x64/aarch64,
+windows x64). It lets the block run its R scripts natively, without Docker.
+
+## Using it from a block
+
+In the block's `software/package.json`, add the package as a devDependency and reference
+its `main` entrypoint from an `R` artifact:
+
+```json
+"artifact": {
+  "type": "R",
+  "registry": "platforma-open",
+  "environment": "@platforma-open/milaboratories.runenv-r-lineage-trees:main",
+  "root": "./src"
+}
+```
+
+The tree builders the scripts call (raxml-ng, FastTree, IgPhyML) are not part of this
+environment.
 
 ## Regenerating the lockfile
 
@@ -38,8 +56,8 @@ repositories explicitly, as `generate-lock.R` does. The set is copied from
 fails with it. The `functional-analysis` block solved this under MILAB-6263 by freezing
 all of CRAN to a 2025-09-10 snapshot, the day before ggplot2 4.0.0 was published. That
 snapshot also predates dowser 2.4 and tigger 1.1.2, which would mean shipping dowser
-2.3 and tigger 1.1.0. This environment pins only ggplot2, to 3.5.2, and keeps CRAN
-current, so dowser 2.5.1 and tigger 1.1.3 are what get installed.
+2.3 and tigger 1.1.0. This environment pins only ggplot2, to 3.5.2, and takes the rest of
+CRAN from a 2026-09-10 Posit snapshot, so dowser 2.5.1 and tigger 1.1.3 are what get installed.
 
 **renv will not snapshot a Bioconductor project without BiocManager.** The snapshot
 aborts on pre-flight validation asking for `BiocManager` and `BiocVersion`, even though
@@ -60,3 +78,6 @@ neither is needed to install anything. Install both before snapshotting.
 | ggplot2 | 3.5.2 | CRAN, pinned |
 
 137 packages in total, 24 of them from Bioconductor.
+
+The lineage-trees block's Docker image restores the same lock, from
+`software/immcantation/context/renv.lock`; keep the two files identical.
