@@ -1,0 +1,145 @@
+diff -ru a/libs/coraxlib/src/corax/core/common.h b/libs/coraxlib/src/corax/core/common.h
+--- a/libs/coraxlib/src/corax/core/common.h	2026-09-28 22:02:04.526214148 +0200
++++ b/libs/coraxlib/src/corax/core/common.h	2026-09-28 22:02:04.550214106 +0200
+@@ -45,7 +45,8 @@
+ #endif
+ 
+ #if (defined(__WIN32__) || defined(__WIN64__))
+-#define CORAX_EXPORT __declspec(dllexport)
++/* Linked statically: nothing to export. */
++#define CORAX_EXPORT
+ #else
+ #define CORAX_EXPORT
+ #endif
+diff -ru a/libs/coraxlib/src/corax/util/hardware.c b/libs/coraxlib/src/corax/util/hardware.c
+--- a/libs/coraxlib/src/corax/util/hardware.c	2026-09-28 22:02:04.522214155 +0200
++++ b/libs/coraxlib/src/corax/util/hardware.c	2026-09-28 22:02:04.550214106 +0200
+@@ -29,7 +29,7 @@
+ 
+ */
+ 
+-#if (defined(__APPLE__) && !defined(__aarch64__)) || \
++#if (defined(__APPLE__) && !defined(__aarch64__)) || defined(_WIN32) || \
+     (!defined(__clang__) && defined(__GNUC__) && (__GNUC__ < 4 || \
+       (__GNUC__ == 4 && __GNUC_MINOR__ < 8))) || \
+     (defined(__clang__) && (__clang_major__ < 3 || \
+diff -ru a/src/main.cpp b/src/main.cpp
+--- a/src/main.cpp	2026-09-28 21:58:40.950577198 +0200
++++ b/src/main.cpp	2026-09-28 21:58:40.974577155 +0200
+@@ -3474,7 +3474,7 @@
+ 
+   // we need at least 2 doubles for each partition AND threads to perform parallel reduction,
+   // and even more with FreeRates in EM mode ->  so resize the buffer accordingly
+-  auto doubles_per_thread_part = std::max(2UL, total_freerate_category_count);
++  auto doubles_per_thread_part = std::max<size_t>(2, total_freerate_category_count);
+   const size_t reduce_buffer_size = std::max<size_t>(1024u, doubles_per_thread_part * sizeof(double) *
+                                      parted_msa.part_count() * ParallelContext::num_threads());
+ 
+diff -ru a/src/util/sysutil.cpp b/src/util/sysutil.cpp
+--- a/src/util/sysutil.cpp	2026-09-28 21:58:40.954577191 +0200
++++ b/src/util/sysutil.cpp	2026-09-28 22:00:14.470410781 +0200
+@@ -2,7 +2,14 @@
+ #include <cpuid.h>
+ #endif
+ #include <sys/time.h>
++#ifdef _WIN32
++#define PSAPI_VERSION 2
++#include <windows.h>
++#include <psapi.h>
++#include <intrin.h>
++#else
+ #include <sys/resource.h>
++#endif
+ #include <sys/types.h>
+ #include <sys/stat.h>
+ #if defined __APPLE__
+@@ -56,7 +63,13 @@
+ void * xmemalign(size_t size, size_t alignment)
+ {
+   void * t = nullptr;
++#ifdef _WIN32
++  /* Unused by raxml-ng itself; freed with _aligned_free if it ever is. */
++  t = _aligned_malloc(size, alignment);
++  int err = t ? 0 : 1;
++#else
+   int err = posix_memalign(& t, alignment, size);
++#endif
+ 
+   if (err || !t)
+     sysutil_fatal("Unable to allocate enough memory.");
+@@ -83,6 +96,37 @@
+ #endif
+ }
+ 
++#ifdef _WIN32
++static double filetime_seconds(const FILETIME &t)
++{
++  ULARGE_INTEGER u;
++  u.LowPart = t.dwLowDateTime;
++  u.HighPart = t.dwHighDateTime;
++  return u.QuadPart * 1.0e-7;
++}
++
++static unsigned long peak_working_set()
++{
++  PROCESS_MEMORY_COUNTERS pmc;
++  if (!GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc)))
++    return 0;
++  return (unsigned long)pmc.PeakWorkingSetSize;
++}
++
++void sysutil_show_rusage()
++{
++  FILETIME created, exited, kernel, user;
++  GetProcessTimes(GetCurrentProcess(), &created, &exited, &kernel, &user);
++  fprintf(stderr, "Time: %.3fs (user)", filetime_seconds(user));
++  fprintf(stderr, " %.3fs (sys)", filetime_seconds(kernel));
++  fprintf(stderr, " Memory: %.0fMB\n", peak_working_set() * 1.0e-6);
++}
++
++unsigned long sysutil_get_memused()
++{
++  return peak_working_set();
++}
++#else
+ void sysutil_show_rusage()
+ {
+   struct rusage r_usage;
+@@ -117,10 +161,24 @@
+   return (unsigned long)r_usage.ru_maxrss * 1024;
+ #endif
+ }
++#endif
+ 
+ unsigned long sysutil_get_memtotal(bool ignore_errors)
+ {
+-#if defined(_SC_PHYS_PAGES) && defined(_SC_PAGESIZE)
++#if defined(_WIN32)
++
++  MEMORYSTATUSEX status;
++  status.dwLength = sizeof(status);
++  if (!GlobalMemoryStatusEx(&status))
++  {
++    if (ignore_errors)
++      return 0;
++    else
++      throw runtime_error("Cannot determine amount of RAM");
++  }
++  return (unsigned long)status.ullTotalPhys;
++
++#elif defined(_SC_PHYS_PAGES) && defined(_SC_PAGESIZE)
+ 
+   long phys_pages = sysconf(_SC_PHYS_PAGES);
+   long pagesize = sysconf(_SC_PAGESIZE);
+@@ -295,7 +353,11 @@
+ 
+ long sysutil_online_cpu_cores()
+ {
++#ifdef _WIN32
++  return std::thread::hardware_concurrency();
++#else
+   return sysconf(_SC_NPROCESSORS_ONLN);
++#endif
+ }
+ 
+ unsigned long sysutil_get_cpu_features()

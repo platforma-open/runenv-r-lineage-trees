@@ -1,0 +1,6 @@
+# The tree-building programs, built by tools/binaries/build-binaries.sh.
+binaries/** filter=lfs diff=lfs merge=lfs -text
+binaries/**/.stamp !filter !diff !merge text eol=lf
+# install-binaries.sh checks these files' checksums against binaries/*/.stamp, so
+# a CRLF checkout (Windows runners) must not change their bytes.
+tools/binaries/** text eol=lf

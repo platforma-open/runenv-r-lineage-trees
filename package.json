@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "scripts": {
     "cleanup": "rm -rf ./rdist ./build",
-    "build": "pl-r-builder && bash tools/binaries/build-binaries.sh && pl-pkg build",
+    "build": "pl-r-builder && bash tools/binaries/install-binaries.sh && pl-pkg build",
     "after-prebuild": "pl-pkg publish packages",
     "prepublishOnly": "pl-pkg prepublish",
     "build:binaries": "bash tools/binaries/build-binaries.sh"

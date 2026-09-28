@@ -1,14 +1,13 @@
 # runenv-r-lineage-trees
 
-R run environment for the Lineage Trees block: Dowser, TIgGER, Alakazam and SHazaM,
-which cover germline reconstruction, novel allele inference and the tree metrics.
-R 4.4.2, Bioconductor 3.20, all five platforms (linux x64/aarch64, macOS x64/aarch64,
-windows x64). It lets the block run its R scripts natively, without Docker.
+R run environment for the Lineage Trees block: Dowser, TIgGER, Alakazam and SHazaM, plus
+the tree builders raxml-ng 2.0.3, FastTree 2.1.11 and IgPhyML 2.0.0. R 4.4.2,
+Bioconductor 3.20, on linux x64/aarch64, macOS x64/aarch64 and windows x64.
 
 ## Using it from a block
 
-In the block's `software/package.json`, add the package as a devDependency and reference
-its `main` entrypoint from an `R` artifact:
+Add the package as a devDependency of the block's software package and reference it from an
+`R` artifact:
 
 ```json
 "artifact": {
@@ -19,12 +18,47 @@ its `main` entrypoint from an `R` artifact:
 }
 ```
 
-The tree builders the scripts call (raxml-ng, FastTree, IgPhyML) are not part of this
-environment.
+The tree builders are on `PATH` (`.exe` on Windows), and IgPhyML's hotspot tables are in
+`share/igphyml/motifs`.
+
+## Releasing
+
+Bump `version` in `package.json` and push to `main`. CI builds all five platforms in about
+40 minutes; publishing waits for approval of the `release` environment. Clone with
+`git lfs` installed.
+
+## Building
+
+`npm run build` runs three steps:
+
+1. `pl-r-builder` compiles R and restores `dependencies/renv.lock` into it. On Linux it
+   expects Rocky Linux 8 with `sudo dnf`, as on the CI runners.
+2. `tools/binaries/install-binaries.sh` copies the tree builders from `binaries/` into
+   `rdist/`, and unpacks the hotspot tables from the pinned IgPhyML source.
+3. `pl-pkg build` packages the result.
+
+Two known failures:
+
+- **Posit binaries.** They link `libR.so`, which `pl-r-builder`'s R does not build, so
+  `dependencies/.Renviron` turns them off and all 137 packages build from source.
+- **pkgdepends 0.9.1** fails in `collect-dependencies.R` with "missing value where
+  TRUE/FALSE needed". 0.9.0 works, but `pl-r-builder` installs the latest, so the build
+  fails there until `@platforma-sdk/r-builder` pins it.
+
+## Tree builders
+
+`binaries/<platform>/` holds them prebuilt, in Git LFS, so CI needs no Docker. To rebuild
+after changing a pin in `tools/binaries/pins.sh` or a build file, run
+`npm run build:binaries` (needs Docker) and commit `binaries/`. The install step refuses
+binaries built from other pins, and LFS pointer files.
+
+None of the three programs is released for Windows. `tools/binaries/win-compat/` holds
+what mingw-w64 lacks: `strsep` and `getline` for IgPhyML, and a header and patch porting
+raxml-ng's memory, timing and CPU queries. The Windows raxml-ng is single-threaded; dowser
+always passes `--threads 1`, and a higher value hangs it. On the same input, each Windows
+program gives the Linux likelihoods, trees and ancestral states.
 
 ## Regenerating the lockfile
-
-`dependencies/renv.lock` is generated, not hand-edited. `tools/` holds the recipe:
 
 ```bash
 docker build -t rlock-base -f tools/lock.Dockerfile tools
@@ -33,63 +67,17 @@ docker run --rm -v "$PWD/tools:/w" rlock-base \
   > dependencies/renv.lock
 ```
 
-Expect around 25 minutes: these images build from source deliberately, with the Posit
-binary packages disabled.
+This takes about 25 minutes, since everything builds from source. Keep the result identical
+to the block's `software/immcantation/context/renv.lock`. Three traps, each hit producing
+the current lock:
 
-Then bump the version in `package.json`, commit, push to main. CI takes roughly 40
-minutes.
-
-## Building the environment
-
-`npm run build` runs `pl-r-builder`, which compiles R and restores `dependencies/renv.lock`
-into it. On Linux it expects Rocky Linux 8 with `sudo dnf`, as on the CI runners.
-
-`dependencies/.Renviron` turns off Posit binary packages for that restore. Posit's Linux
-binaries link against `libR.so`, and the R that `pl-r-builder` compiles is not built as a
-shared library, so they fail to load ("libR.so: cannot open shared object file"). With
-the binaries off, all 137 packages build from source.
-
-pkgdepends 0.9.1, which `pl-r-builder` installs as the latest version, cannot resolve R's
-recommended packages that come bundled with R. Its `collect-dependencies.R` step then
-fails with "missing value where TRUE/FALSE needed" in `download.file`. pkgdepends 0.9.0
-works. Until `@platforma-sdk/r-builder` pins it, a build fails at that step.
-
-## Tree-building programs
-
-The environment also carries raxml-ng 2.0.3, FastTree 2.1.11 and IgPhyML 2.0.0 in
-`bin/`, which is on `PATH` for every R tool that runs in it, and IgPhyML's hotspot
-tables in `share/igphyml/motifs`. `tools/binaries/build-binaries.sh` builds them
-into `binaries/` (pinned downloads, compiled in a pinned Debian container, so it
-needs Docker once) and copies them into each platform under `rdist/`. `npm run
-build` runs it between `pl-r-builder` and `pl-pkg build`; with `binaries/` already
-built it only copies, so the R build itself does not need Docker. Windows gets none:
-raxml-ng has no Windows build.
-
-## Three things that will break a regeneration
-
-Each of these was hit while producing the current lock, and each fails in a way that
-does not name its cause.
-
-**`renv::init(bioconductor = "3.20")` does not set the repositories.** After calling
-it, `getOption("repos")` holds CRAN and nothing else. Alakazam needs `Biostrings`,
-`GenomicAlignments` and `IRanges`, so it fails with "package not available", and
-Dowser, TIgGER and SHazaM fail after it because they all import Alakazam. Set all six
-repositories explicitly, as `generate-lock.R` does. The set is copied from
-`runenv-r-tcr-disco`, which is the proven configuration here.
-
-**ggplot2 4.x breaks ggtree.** ggplot2 4.0 removed `check_linewidth`, which ggtree
-3.14.0 from Bioconductor 3.20 calls at lazy-load, so ggtree fails to build and Dowser
-fails with it. The `functional-analysis` block solved this under MILAB-6263 by freezing
-all of CRAN to a 2025-09-10 snapshot, the day before ggplot2 4.0.0 was published. That
-snapshot also predates dowser 2.4 and tigger 1.1.2, which would mean shipping dowser
-2.3 and tigger 1.1.0. This environment pins only ggplot2, to 3.5.2, and takes the rest of
-CRAN from a 2026-09-10 Posit snapshot, so dowser 2.5.1 and tigger 1.1.3 are what get installed.
-
-**renv will not snapshot a Bioconductor project without BiocManager.** The snapshot
-aborts on pre-flight validation asking for `BiocManager` and `BiocVersion`, even though
-neither is needed to install anything. Install both before snapshotting.
-
-## What the lock currently pins
+- **`renv::init(bioconductor = "3.20")` sets only CRAN.** Alakazam then misses
+  `Biostrings`, `GenomicAlignments` and `IRanges`, and Dowser, TIgGER and SHazaM fail
+  after it. `generate-lock.R` sets all six repositories, copied from `runenv-r-tcr-disco`.
+- **ggplot2 4.x breaks ggtree 3.14.0**, which calls the removed `check_linewidth`. Only
+  ggplot2 is pinned, to 3.5.2; the rest comes from a 2026-09-10 Posit snapshot.
+- **renv will not snapshot without `BiocManager` and `BiocVersion`**, although neither is
+  needed to install. Install both first.
 
 | Package | Version | Source |
 |---|---|---|
@@ -103,7 +91,4 @@ neither is needed to install anything. Install both before snapshotting.
 | pwalign | 1.2.0 | Bioconductor |
 | ggplot2 | 3.5.2 | CRAN, pinned |
 
-137 packages in total, 24 of them from Bioconductor.
-
-The lineage-trees block's Docker image restores the same lock, from
-`software/immcantation/context/renv.lock`; keep the two files identical.
+The lock holds 137 packages, 24 of them from Bioconductor.

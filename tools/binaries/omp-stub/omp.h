@@ -1,8 +1,5 @@
-/* Single-threaded stand-in for the OpenMP runtime, used for the macOS IgPhyML
- * build. zig's clang has no libomp for macOS and IgPhyML calls omp_get_wtime
- * and a lock unconditionally, so without this it does not link. The pragmas
- * are ignored without -fopenmp, so the program runs on one thread and
- * --threads has no effect. */
+/* Single-threaded OpenMP stand-in: zig has no libomp for macOS or Windows, and IgPhyML calls
+ * omp_get_wtime and a lock regardless. Without -fopenmp it runs on one thread. */
 #ifndef LINEAGE_TREES_OMP_STUB_H
 #define LINEAGE_TREES_OMP_STUB_H
 

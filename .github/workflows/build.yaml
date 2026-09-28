@@ -10,6 +10,8 @@ on:
     paths:
       - '.github/workflows/**'
       - 'dependencies/**'
+      - 'binaries/**'
+      - 'tools/binaries/**'
       - 'package.json'
       - 'package-lock.json'
 
@@ -30,6 +32,9 @@ jobs:
       app-name: R run environment for Lineage Trees
       app-name-slug: 'runenv-r-lineage-trees'
       notify-telegram: true
+
+      # binaries/ holds the tree-building programs, in Git LFS.
+      checkout-lfs: 'true'
 
       node-version: '20.x'
       always-auth: 'true'
@@ -54,9 +59,8 @@ jobs:
         rdist/**/Rscript
         rdist/**/library/**/bin/*
 
-      # R regularly produce new .so files during execution and does not sign them even with ad-hoc signatures,
-      # as it is not adjusted for Mac OS X execution environment.
-      # We have to disable libraries validation to not break R runtime.
+      # R writes .so files at run time and signs none of them, not even ad hoc, so library
+      # validation is disabled to keep R working on macOS.
       mac-sign-entitlements: |
         <key>com.apple.security.automation.apple-events</key>               <true/>
         <key>com.apple.security.cs.allow-dyld-environment-variables</key>   <true/>
@@ -64,9 +68,8 @@ jobs:
         <key>com.apple.security.cs.disable-library-validation</key>         <true/>
         <key>com.apple.security.get-task-allow</key>                        <true/>
 
-      # rdist/macosx-x64/<R package root>
-      # We do not use '**' here, as we do not want to match each file and send it in a separate notarization command.
-      # The thing we need is to bundle all files for specific os/arch into one archive and sent it to notarization.
+      # rdist/<platform>/<R root>, not '**': each platform goes to notarization as one archive,
+      # not one request per file.
       notarize-paths: |
         rdist/*/*
         !rdist/*/packages

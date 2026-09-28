@@ -18,9 +18,8 @@ options(repos = c(
   CRAN          = "https://packagemanager.posit.co/cran/2026-09-10"
 ))
 cat("REPOS:\n"); print(getOption("repos"))
-# ggplot2 4.x drops check_linewidth, which ggtree 3.14.0 (Bioc 3.20) needs at lazy-load.
-# Pin just ggplot2 rather than freezing all of CRAN to Sep 2025, which would cost
-# dowser 2.5.1 -> 2.3 and tigger 1.1.3 -> 1.1.0.
+# ggplot2 4.x drops check_linewidth, which ggtree 3.14.0 needs; pinning only ggplot2 keeps
+# dowser 2.5.1 and tigger 1.1.3, which a Sep 2025 CRAN freeze would lose.
 renv::install("ggplot2@3.5.2")
 renv::install(c("dowser", "tigger", "alakazam", "shazam", "airr"))
 renv::install(c("BiocManager", "BiocVersion"))
