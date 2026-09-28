@@ -1,0 +1,41 @@
+{
+  "name": "@platforma-open/milaboratories.runenv-r-lineage-trees",
+  "description": "R run environment for the Lineage Trees block (Dowser, TIgGER, Alakazam, SHazaM)",
+  "version": "0.1.0",
+  "scripts": {
+    "cleanup": "rm -rf ./rdist ./build",
+    "build": "pl-r-builder && pl-pkg build",
+    "after-prebuild": "pl-pkg publish packages",
+    "prepublishOnly": "pl-pkg prepublish"
+  },
+  "files": [
+    "dist/"
+  ],
+  "block-software": {
+    "entrypoints": {
+      "main": {
+        "environment": {
+          "artifact": {
+            "type": "environment",
+            "runtime": "R",
+            "r-version": "4.4.2",
+            "registry": "platforma-open",
+            "roots": {
+              "linux-x64": "./rdist/linux-x64/",
+              "linux-aarch64": "./rdist/linux-aarch64/",
+              "macosx-x64": "./rdist/macosx-x64/",
+              "macosx-aarch64": "./rdist/macosx-aarch64/",
+              "windows-x64": "./rdist/windows-x64/"
+            },
+            "binDir": "bin"
+          }
+        }
+      }
+    }
+  },
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "@platforma-sdk/package-builder": "~3.11.4",
+    "@platforma-sdk/r-builder": "^1.1.8"
+  }
+}

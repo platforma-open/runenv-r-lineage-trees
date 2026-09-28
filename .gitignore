@@ -1,0 +1,6 @@
+dist/
+build/
+rdist/
+node_modules/
+*.tar.gz
+*.tgz
