@@ -27,8 +27,8 @@ jobs:
 
     uses: milaboratory/github-ci/.github/workflows/node-matrix.yaml@v4
     with:
-      app-name: R run environment for TCR Discovery
-      app-name-slug: 'runenv-r-tcr-disco'
+      app-name: R run environment for Lineage Trees
+      app-name-slug: 'runenv-r-lineage-trees'
       notify-telegram: true
 
       node-version: '20.x'
