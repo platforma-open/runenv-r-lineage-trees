@@ -54,12 +54,16 @@ jobs:
         dist/
 
       # On Windows these are signed with Azure Trusted Signing (github-ci windows-sign).
+      # The Windows rdist holds only PE files in bin/ (R and Rscript have no .exe), hence
+      # rdist/windows-x64/bin/*. after-prebuild repacks the archives, so the signatures
+      # reach the published package.
       sign-binaries: |
         rdist/**/*.so
         rdist/**/*.dylib
         rdist/**/bin/exec/R
         rdist/**/Rscript
         rdist/**/library/**/bin/*
+        rdist/windows-x64/bin/*
 
       # R writes .so files at run time and signs none of them, not even ad hoc, so library
       # validation is disabled to keep R working on macOS.
