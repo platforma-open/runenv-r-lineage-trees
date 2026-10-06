@@ -53,6 +53,7 @@ jobs:
       build-artifacts: |
         dist/
 
+      # On Windows these are signed with Azure Trusted Signing (github-ci windows-sign).
       sign-binaries: |
         rdist/**/*.so
         rdist/**/*.dylib
