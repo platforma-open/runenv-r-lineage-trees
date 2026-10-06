@@ -4,3 +4,5 @@ binaries/**/.stamp !filter !diff !merge text eol=lf
 # install-binaries.sh checks these files' checksums against binaries/*/.stamp, so
 # a CRLF checkout (Windows runners) must not change their bytes.
 tools/binaries/** text eol=lf
+# Windows runners check out with CRLF, which bash cannot run.
+tools/build.sh text eol=lf

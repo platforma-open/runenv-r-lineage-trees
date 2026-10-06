@@ -5,7 +5,7 @@
   "scripts": {
     "cleanup": "rm -rf ./rdist ./build",
     "postinstall": "node tools/patch-r-builder.mjs",
-    "build": "pl-r-builder && bash tools/binaries/install-binaries.sh && pl-pkg build",
+    "build": "bash tools/build.sh",
     "after-prebuild": "pl-pkg publish packages",
     "prepublishOnly": "pl-pkg prepublish",
     "build:binaries": "bash tools/binaries/build-binaries.sh"

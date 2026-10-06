@@ -29,10 +29,12 @@ Bump `version` in `package.json` and push to `main`. CI builds all five platform
 
 ## Building
 
-`npm run build` runs three steps:
+`npm run build` runs `tools/build.sh`, which runs three steps:
 
 1. `pl-r-builder` compiles R and restores `dependencies/renv.lock` into it. On Linux it
-   expects Rocky Linux 8 with `sudo dnf`, as on the CI runners.
+   needs Rocky Linux 8 with `sudo dnf`, whose glibc 2.28 is the oldest the environment
+   runs on. On any other Linux, such as the Ubuntu CI runners, `tools/build.sh` runs the
+   whole build in a Rocky 8 container, so it needs Docker.
 2. `tools/binaries/install-binaries.sh` copies the tree builders from `binaries/` into
    `rdist/`, and unpacks the hotspot tables from the pinned IgPhyML source.
 3. `pl-pkg build` packages the result.
