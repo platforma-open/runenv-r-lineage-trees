@@ -56,7 +56,8 @@ jobs:
       # On Windows these are signed with Azure Trusted Signing (github-ci windows-sign).
       # The Windows rdist holds only PE files in bin/ (R and Rscript have no .exe), hence
       # rdist/windows-x64/bin/*. after-prebuild repacks the archives, so the signatures
-      # reach the published package.
+      # reach the published package. windows-sign takes the whole list in one step
+      # (github-ci#216), so every matched file is signed, not only the first.
       sign-binaries: |
         rdist/**/*.so
         rdist/**/*.dylib
