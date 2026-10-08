@@ -1,10 +1,10 @@
 {
   "name": "@platforma-open/milaboratories.runenv-r-lineage-trees",
   "description": "R run environment for the Lineage Trees block (Dowser, TIgGER, Alakazam, SHazaM)",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "scripts": {
     "cleanup": "rm -rf ./rdist ./build",
-    "postinstall": "node tools/patch-r-builder.mjs",
+    "prepare": "node tools/patch-r-builder.mjs",
     "build": "bash tools/build.sh",
     "after-prebuild": "pl-pkg build packages && pl-pkg publish packages",
     "prepublishOnly": "pl-pkg prepublish",
